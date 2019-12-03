@@ -1,0 +1,144 @@
+<div class="layui-card">
+    <div class="layui-card-header">
+        <h2 class="header-title">Authority Manage</h2>
+        <span class="layui-breadcrumb pull-right">
+          <a href="#!home_console">Homepage</a>
+          <a><cite>Authority Manage</cite></a>
+        </span>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-form toolbar">
+            Search：
+            <input id="auth-edit-search_${source}" class="layui-input search-input" type="text" placeholder="key words" autocomplete="off"/>&emsp;
+            <button id="auth-btn-search_${source}" class="layui-btn icon-btn"><i class="layui-icon">&#xe615;</i>Search</button>
+            <button id="auth-btn-add_${source}" class="layui-btn icon-btn"><i class="layui-icon">&#xe654;</i>Add</button>
+        </div>
+
+        <!-- 数据表格 -->
+        <table class="layui-table" id="auth-table_${source}" lay-filter="auth-table_${source}"></table>
+    </div>
+
+</div>
+
+<!-- 表格操作列 -->
+<script type="text/html" id="auth-state_${source}">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">Edit</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">Delete</a>
+</script>
+
+<script>
+    layui.use(['form', 'table', 'util', 'admin', 'treetable'], function () {
+        var form = layui.form;
+        var table = layui.table;
+        var layer = layui.layer;
+        var util = layui.util;
+        var admin = layui.admin;
+        var treetable = layui.treetable;
+
+        var currSourceAuthList;
+
+        // 渲染表格
+        var renderTable = function () {
+            treetable.render({
+                treeColIndex: 1,
+                treeSpid: -1,
+                treeIdName: 'authorityId',
+                treePidName: 'parentId',
+                elem: '#auth-table_${source}',
+                url: '/system/${source}/authorities/list',
+                page: false,
+                cols: [[
+                    {type: 'numbers'},
+                    {field: 'authorityName', minWidth: 200, title: 'Authority Name'},
+                    {field: 'authority', title: 'Authority value'},
+                    {field: 'accessUrl', title: 'Access Url'},
+                    {field: 'orderNumber', width: 80, align: 'center', title: 'Sort'},
+                    {
+                        field: 'authType', width: 85, align: 'center', templet: function (d) {
+                            if (d.authType == 'element') {
+                                return '<span class="layui-badge layui-bg-gray">button</span>';
+                            }
+                            if (d.parentId == -1) {
+                                return '<span class="layui-badge layui-bg-blue">catalogue</span>';
+                            } else {
+                                return '<span class="layui-badge-rim">menu</span>';
+                            }
+                        }, title: 'Type'
+                    },
+                    {templet: '#auth-state_${source}', width: 120, align: 'center', title: 'Operation'}
+                ]]
+                , done: function (res, curr, count) {
+                    currSourceAuthList = res.data;
+                }
+            });
+        }
+
+        renderTable();
+
+        // 工具条点击事件
+        table.on('tool(auth-table_${source})', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'edit') { // 修改
+                showEditModel(data);
+            } else if (layEvent === 'del') { // 重置密码
+                layer.confirm('Are you sure to delete this item?', function () {
+                    layer.load(2);
+                    $.post('/system/${source}/authorities/delete', {
+                        authorityId: obj.data.authorityId
+                    }, function (data) {
+                        layer.closeAll('loading');
+                        if (data.code == 200) {
+                            layer.msg(data.msg, {icon: 1});
+                            renderTable();
+                        } else {
+                            layer.msg(data.code + ":" + data.msg, {icon: 2});
+                        }
+                    });
+                });
+            }
+        });
+
+        // 同步按钮点击事件
+        $('#auth-btn-add_${source}').click(function () {
+            showEditModel();
+        });
+
+        // 显示表单弹窗
+        var showEditModel = function (data) {
+            var title = data ? 'Authority Edit' : 'Authority Add';
+            admin.putTempData('t_authoritie', data);
+            admin.putTempData('currSourceAuthList',currSourceAuthList);
+            admin.popupCenter({
+                title: title,
+                path: '/system/${source}/authorities/editForm',
+                finish: function () {
+                    renderTable();
+                }
+            });
+        };
+
+        // 搜索按钮点击事件
+        $('#auth-btn-search_${source}').click(function () {
+            var keyword = $('#auth-edit-search_${source}').val();
+            var searchCount = 0;
+            $('#auth-table_${source}').next('.treeTable').find('.layui-table-body tbody tr td').each(function () {
+                $(this).css('background-color', 'transparent');
+                var text = $(this).text();
+                if (keyword != '' && text.indexOf(keyword) >= 0) {
+                    $(this).css('background-color', 'rgba(250,230,160,0.5)');
+                    if (searchCount == 0) {
+                        $('.layui-tab-item.layui-show').stop(true);
+                        $('.layui-tab-item.layui-show').animate({scrollTop: $(this).offset().top - 150}, 500);
+                    }
+                    searchCount++;
+                }
+            });
+            if (keyword != '' && searchCount == 0) {
+                layer.msg("No matching result", {icon: 5});
+            } else {
+                treetable.expandAll('#auth-table_${source}');
+            }
+        });
+    });
+</script>

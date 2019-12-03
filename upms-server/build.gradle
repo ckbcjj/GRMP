@@ -1,0 +1,48 @@
+description = 'upms valor'
+version '0.1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        maven {
+            url "http://192.168.199.100:8080/repository/internal/"
+        }
+        maven{url "http://repo.spring.io/snapshot"}
+        maven{url "http://repo.spring.io/milestone"}
+
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+
+
+configurations {
+    compile.exclude module: "spring-boot-starter-tomcat"
+}
+
+
+dependencies {
+
+    compile project(':upms-model')
+
+    compile fileTree(dir: "${rootProject.projectDir}/libs/common",include: ['*.jar'])
+    
+    compile "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
+    compile "org.springframework.boot:spring-boot-starter-undertow:$springBootVersion"
+    compile("org.springframework.boot:spring-boot-starter-aop:$springBootVersion")
+    compile group: 'org.springframework', name: 'spring-orm', version:"${springVersion}"
+
+    compile group: 'commons-io', name: 'commons-io', version:'2.4'
+    compile group: 'org.apache.commons', name: 'commons-dbcp2', version: "${dbcp2Version}"
+    compile group: 'org.hibernate', name: 'hibernate-core', version:"${hibernateVersion}"
+
+    compile 'com.google.guava:guava:19.0'
+    compile 'com.github.davidmoten:geo:0.7.1'
+    compile 'com.maxmind.geoip2:geoip2:2.8.1'
+    compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.41'
+}

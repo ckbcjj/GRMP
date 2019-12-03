@@ -1,0 +1,6 @@
+rootProject.name = 'upms'
+include ':upms-model'
+include ':upms-server'
+include ':upms-web'
+include ':upms-web-sdk'
+

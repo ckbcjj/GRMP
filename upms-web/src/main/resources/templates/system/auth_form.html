@@ -1,0 +1,93 @@
+<form id="authoritie-form" lay-filter="authoritie-form" class="layui-form model-form">
+    <input name="authorityId" type="hidden"/>
+    <input name="sourceCode" id="source-code" type="hidden"/>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Authority Name</label>
+        <div class="layui-input-block">
+            <input name="authorityName" placeholder="authority name" type="text" class="layui-input" maxlength="50"
+                   lay-verify="required" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Authority Value</label>
+        <div class="layui-input-block">
+            <input name="authority" placeholder="authority value" type="text" class="layui-input" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Access Url</label>
+        <div class="layui-input-block">
+            <input name="accessUrl" placeholder="access url" type="text" class="layui-input" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Auth Icon</label>
+        <div class="layui-input-block">
+            <input name="authIcon" placeholder="auth icon" type="text" class="layui-input" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Auth Type</label>
+        <div class="layui-input-block">
+            <input name="authType" placeholder="auth type" type="text" class="layui-input" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Sort</label>
+        <div class="layui-input-block">
+            <input name="orderNumber" placeholder="sort" type="number" class="layui-input" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Parent Auth</label>
+        <div class="layui-input-block">
+            <select name="parentId" id="parentId">
+                <option value="-1">--select--</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item model-form-footer">
+        <button class="layui-btn layui-btn-primary" type="button" ew-event="closeDialog">Cancel</button>
+        <button class="layui-btn" lay-filter="authoritie-form-submit" lay-submit>Submit</button>
+    </div>
+</form>
+
+<script>
+    layui.use(['layer', 'admin', 'form'], function () {
+        var layer = layui.layer;
+        var admin = layui.admin;
+        var form = layui.form;
+
+        var list = admin.getTempData('currSourceAuthList');
+        for (var i = 0; i < list.length; i++) {
+            $("#parentId").append("<option value='" + list[i].authorityId + "'>" + list[i].authorityName + "</option>");
+        }
+
+        form.render('select');
+
+        var url = '/system/${source}/authorities/add';
+        // 回显user数据
+        var authoritie = admin.getTempData('t_authoritie');
+        if (authoritie) {
+            url = '/system/${source}/authorities/edit';
+            form.val('authoritie-form', authoritie);
+        }else {
+            $('#source-code').val('${source}');
+        }
+
+        // 表单提交事件
+        form.on('submit(authoritie-form-submit)', function (data) {
+            layer.load(2);
+            $.post(url, data.field, function (data) {
+                layer.closeAll('loading');
+                if (data.code == 200) {
+                    layer.msg(data.msg, {icon: 1});
+                    admin.finishPopupCenter();
+                } else {
+                    layer.msg(data.code + ":" + data.msg, {icon: 2});
+                }
+            });
+            return false;
+        });
+    });
+</script>

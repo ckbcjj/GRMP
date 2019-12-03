@@ -1,0 +1,194 @@
+<div class="layui-card">
+    <div class="layui-card-header">
+        <h2 class="header-title">User Manage</h2>
+        <span class="layui-breadcrumb pull-right">
+          <a href="#!home_console">Homepage</a>
+          <a><cite>User Manage</cite></a>
+        </span>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-form toolbar">
+            Search：
+            <select id="user-search-key">
+                <option value="">-select-</option>
+                <option value="userId">id</option>
+                <option value="userName">user name</option>
+                <option value="nickName">nick name</option>
+                <option value="phone">phone number</option>
+            </select>&emsp;
+            <input id="user-search-value" class="layui-input search-input" type="text" placeholder="key words" autocomplete="off"/>&emsp;
+            <button id="user-btn-search" class="layui-btn icon-btn"><i class="layui-icon">&#xe615;</i>Search</button>
+            <button id="user-btn-show" class="layui-btn icon-btn"><i class="layui-icon"></i>All</button>
+            <button id="user-btn-add" class="layui-btn icon-btn" lay-tips="new user password is 123456"><i class="layui-icon">&#xe654;</i>Add</button>
+        </div>
+        <table class="layui-hide" id="user-table" lay-filter="user-table"></table>
+    </div>
+</div>
+
+<!-- 表格操作列 -->
+<script type="text/html" id="user-table-bar">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">Edit</a>
+    {{#  if(d.isSuper !=1){ }}
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">Delete</a>
+    {{#  } }}
+    <a class="layui-btn layui-btn-xs" lay-event="roleConfig">Role Config</a>
+    <a class="layui-btn layui-btn-xs" lay-event="reset">Reset Password</a>
+</script>
+
+<!-- 表格状态列 -->
+<script type="text/html" id="user-tpl-state">
+    {{#  if(d.isSuper == 1){ }}
+    <span style="color: #f52618">Lock Denied</span>
+    {{#  } else { }}
+    <input type="checkbox" lay-filter="user-tpl-state" value="{{d.userId}}" lay-skin="switch" lay-text="Normal|Lock"
+           {{d.state==0?'checked':''}}/>
+    {{#  } }}
+</script>
+
+<script>
+    layui.use(['table', 'util','admin','form'], function () {
+        var table = layui.table;
+        var util = layui.util;
+        var admin =layui.admin;
+        var form =layui.form;
+
+        form.render("select");
+
+        // 渲染表格
+        table.render({
+            elem: '#user-table',
+            url: '/system/user/list',
+            page: true,
+            cols: [[
+                {field: 'userId', sort: true, title: 'User Id'},
+                {field: 'userName', sort: true, title: 'User Name'},
+                {field: 'nickName', sort: true, title: 'Nick Name'},
+                {field: 'phone', sort: true, title: 'Phone Number'},
+                {field: 'sex', sort: true, title: 'Sex'},
+                {
+                    sort: true, templet: function (d) {
+                        return util.toDateString(d.createTime);
+                    }, title: 'Create Time'
+                },
+                {field: 'state', sort: true, templet: '#user-tpl-state', title: 'State'},
+                {align: 'center', width: 350, toolbar: '#user-table-bar', title: 'Operation'}
+            ]]
+        });
+        // 添加按钮点击事件
+        $('#user-btn-add').click(function () {
+            showEditModel();
+        });
+
+        // 工具条点击事件
+        table.on('tool(user-table)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if (layEvent === 'edit') { // 修改
+                showEditModel(data);
+            } else if (obj.event === 'del') {
+                layer.confirm('Are you sure to delete this item?', function () {
+                    layer.load(2);
+                    $.post('/system/user/delete', {
+                        userId: obj.data.userId
+                    }, function (data) {
+                        layer.closeAll('loading');
+                        if (data.code == 200) {
+                            layer.msg(data.msg, {icon: 1});
+                            obj.del();
+                        } else {
+                            layer.msg(data.code + ":" + data.msg, {icon: 2});
+                        }
+                    });
+                });
+            } else if (layEvent === 'roleConfig') {
+                admin.putTempData('t_user', data);
+                admin.popupCenter({
+                    title: 'Role Config',
+                    path: '/system/user/editUserRoleForm?userId=' + data.userId,
+                    finish: function () {
+                        table.reload('user-table', {});
+                    }
+                });
+            } else if (layEvent === 'reset') { // 重置密码
+                layer.confirm('Are you sure to reset the password?', function (i) {
+                    layer.close(i);
+                    layer.load(2);
+                    $.post('/system/user/restPsw', {
+                        userId: obj.data.userId
+                    }, function (data) {
+                        layer.closeAll('loading');
+                        if (data.code == 200) {
+                            layer.msg(data.msg, {icon: 1});
+                        } else {
+                            layer.msg(data.code + ":" + data.msg, {icon: 2});
+                        }
+                    });
+                });
+            }
+        });
+
+        // 显示表单弹窗
+        var showEditModel = function (data) {
+            var title = data ? 'User Edit' : 'User Add';
+            var userId = data ? data.userId : -1;
+            admin.putTempData('t_user', data);
+            admin.popupCenter({
+                title: title,
+                path: '/system/user/editForm',
+                finish: function () {
+                    table.reload('user-table', {});
+                }
+            });
+        };
+
+        // 搜索按钮点击事件
+        $('#user-btn-search').click(function () {
+            var key = $('#user-search-key').val();
+            var value = $('#user-search-value').val();
+            if (key === "userId") {
+                var reg = /^[1-9]\d*$/;
+                if (!reg.test(value)) {
+                    $('#user-search-value').val('');
+                    return;
+                }
+            }
+            table.reload('user-table', {where: {searchKey: key, searchValue: value}});
+        });
+
+        // 展示全部按钮点击事件
+        $('#user-btn-show').click(function () {
+            $('#user-search-key').val('');
+            $('#user-search-value').val('');
+            form.render('select');
+            table.reload('user-table', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                },
+                where:{
+                    searchKey: '',
+                    searchValue: ''
+                }
+            });
+        });
+
+        // 修改user状态
+        form.on('switch(user-tpl-state)', function (obj) {
+            layer.load(2);
+            $.post('/system/user/updateState', {
+                userId: obj.elem.value,
+                state: obj.elem.checked ? 0 : 1
+            }, function (data) {
+                layer.closeAll('loading');
+                if (data.code == 200) {
+                    layer.msg(data.msg, {icon: 1});
+                    //table.reload('table-user', {});
+                } else {
+                    layer.msg(data.code + ":" + data.msg, {icon: 2});
+                    $(obj.elem).prop('checked', !obj.elem.checked);
+                    form.render('checkbox');
+                }
+            });
+        });
+    });
+</script>

@@ -1,0 +1,228 @@
+<div class="layui-card">
+    <div class="layui-card-header">
+        <h2 class="header-title">Role Manage</h2>
+        <span class="layui-breadcrumb pull-right">
+          <a href="#!home_console">Homepage</a>
+          <a><cite>Role Manage</cite></a>
+        </span>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-form toolbar">
+            Search：
+            <input id="role-edit-search_${source}" class="layui-input search-input" type="text" placeholder="key words" autocomplete="off"/>&emsp;
+            <button id="role-btn-search_${source}" class="layui-btn icon-btn"><i class="layui-icon">&#xe615;</i>Search</button>
+            <button id="role-btn-show_${source}" class="layui-btn icon-btn"><i class="layui-icon"></i>All</button>
+            <button id="role-btn-add_${source}" class="layui-btn icon-btn"><i class="layui-icon">&#xe654;</i>Add</button>
+        </div>
+
+        <!-- 数据表格 -->
+        <table class="layui-table" id="role-table_${source}" lay-filter="role-table_${source}"></table>
+    </div>
+</div>
+
+<!-- 表单弹窗 -->
+<script type="text/html" id="role-model_${source}">
+    <form id="role-form" lay-filter="role-form" class="layui-form model-form">
+        <input name="roleId" type="hidden"/>
+        <input name="sourceCode" id="source-code" type="hidden"/>
+        <div class="layui-form-item">
+            <label class="layui-form-label">Role Name</label>
+            <div class="layui-input-block">
+                <input name="roleName" placeholder="role name" type="text" class="layui-input" maxlength="20"
+                       lay-verify="required" autocomplete="off"/>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">Remarks</label>
+            <div class="layui-input-block">
+                <textarea name="comments" placeholder="input content" class="layui-textarea" maxlength="200"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item model-form-footer">
+            <button class="layui-btn layui-btn-primary close" type="button">Cancel</button>
+            <button class="layui-btn" lay-filter="role-form-submit_${source}" lay-submit>Submit</button>
+        </div>
+    </form>
+</script>
+
+<!-- 表格操作列 -->
+<script type="text/html" id="role-table-bar_${source}">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">Edit</a>
+    {{#  if(d.isSuper !=1){ }}
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">Delete</a>
+    {{#  } }}
+    <a class="layui-btn layui-btn-xs" lay-event="auth">Authority</a>
+</script>
+
+<script>
+    layui.use(['form', 'table', 'util'], function () {
+        var form = layui.form;
+        var table = layui.table;
+        var layer = layui.layer;
+        var util = layui.util;
+        var formUrl;  // 表单提交的action
+
+        //渲染表格
+        table.render({
+            elem: '#role-table_${source}',
+            url: '/system/${source}/role/list',
+            page: false,
+            cols: [[
+                {field: 'roleId', sort: true, title: 'Role Id'},
+                {field: 'roleName', sort: true, title: 'Role Name'},
+                {field: 'comments', sort: true, title: 'Remarks'},
+                {
+                    field: 'createTime', sort: true, templet: function (d) {
+                        return util.toDateString(d.createTime);
+                    }, title: 'Create Time'
+                },
+                {align: 'center', width: 350, toolbar: '#role-table-bar_${source}', title: 'Operation'}
+            ]]
+        });
+
+        // 添加按钮点击事件
+        $('#role-btn-add_${source}').click(function () {
+            showEditModel();
+        });
+
+        // 表单提交事件
+        form.on('submit(role-form-submit_${source})', function (data) {
+            layer.load(2);
+            $.post(formUrl, data.field, function (data) {
+                layer.closeAll('loading');
+                if (data.code == 200) {
+                    layer.closeAll('page');
+                    layer.msg(data.msg, {icon: 1});
+                    table.reload('role-table_${source}');
+                } else {
+                    layer.msg(data.code + ":" + data.msg, {icon: 2});
+                }
+            });
+            return false;
+        });
+
+        // 工具条点击事件
+        table.on('tool(role-table_${source})', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'edit') { //修改
+                showEditModel(data);
+            } else if (obj.event === 'del') { //删除
+                layer.confirm('Are you sure to delete this item?', function () {
+                    layer.load(2);
+                    $.post('/system/${source}/role/delete', {
+                        roleId: obj.data.roleId
+                    }, function (data) {
+                        layer.closeAll('loading');
+                        if (data.code == 200) {
+                            layer.msg(data.msg, {icon: 1});
+                            obj.del();
+                        } else {
+                            layer.msg(data.code + ":" + data.msg, {icon: 2});
+                        }
+                    });
+                });
+            } else if (obj.event === 'auth') {  // 权限管理
+                showPermDialog(obj.data.roleId);
+            }
+        });
+
+        // 搜索按钮点击事件
+        $('#role-btn-search_${source}').click(function () {
+            var keyword = $('#role-edit-search_${source}').val();
+            table.reload('role-table_${source}', {where: {keyword: keyword}});
+        });
+
+        // 展示全部按钮点击事件
+        $('#role-btn-show_${source}').click(function () {
+            $('#role-edit-search_${source}').val('');
+            table.reload('role-table_${source}', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                },
+                where: {
+                    keyword: ''
+                }
+            });
+        });
+
+        // 显示编辑弹窗
+        var showEditModel = function (data) {
+            layer.open({
+                type: 1,
+                title: data ? 'Role Edit' : 'Role Add',
+                area: '450px',
+                offset: '120px',
+                content: $('#role-model_${source}').html(),
+                success: function () {
+                    $('#role-form')[0].reset();
+                    formUrl = '/system/${source}/role/add';
+                    if (data) {
+                        formUrl = '/system/${source}/role/edit';
+                        form.val('role-form', data);
+                    }else {
+                        $('#source-code').val('${source}');
+                    }
+                    $('#role-form .close').click(function () {
+                        layer.closeAll('page');
+                    });
+                }
+            });
+        };
+
+        // 权限管理
+        var showPermDialog = function (roleId) {
+            layer.open({
+                type: 1,
+                title: 'Authority Manage',
+                area: ['450px', '450px'],
+                offset: '120px',
+                content: '<ul id="treeAuth" class="ztree" style="padding: 25px 0px 20px 60px;"></ul>',
+                btn: ['Submit', 'Close'],
+                btnAlign: 'c',
+                success: function (layero, index) {
+                    $(layero).children('.layui-layer-content').css('overflow-y', 'auto');
+                    layer.load(2);
+                    var setting = {
+                        check: {enable: true},
+                        data: {
+                            simpleData: {enable: true}
+                        }
+                    };
+                    $.get('/system/${source}/role/authTree', {
+                        roleId: roleId
+                    }, function (data) {
+                        $.fn.zTree.init($('#treeAuth'), setting, data);
+                        layer.closeAll('loading');
+                    }, 'json');
+                },
+                yes: function (index) {
+                    layer.load(1);
+                    var treeObj = $.fn.zTree.getZTreeObj('treeAuth');
+                    var nodes = treeObj.getCheckedNodes(true);
+                    var ids = new Array();
+                    for (var i = 0; i < nodes.length; i++) {
+                        ids[i] = nodes[i].id;
+                    }
+                    if (ids.length == 0) {
+                        layer.closeAll('loading');
+                        layer.msg("authority can not be empty", {icon: 2});
+                    } else {
+                        $.post('/system/${source}/role/updateRoleAuth', {
+                            roleId: roleId,
+                            authIds: JSON.stringify(ids)
+                        }, function (data) {
+                            layer.closeAll('loading');
+                            if (200 == data.code) {
+                                layer.msg(data.msg, {icon: 1});
+                                layer.close(index);
+                            } else {
+                                layer.msg(data.code + ":" + data.msg, {icon: 2});
+                            }
+                        }, 'json');
+                    }
+                }
+            });
+        }
+    });
+
+</script>

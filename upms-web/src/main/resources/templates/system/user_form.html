@@ -1,0 +1,68 @@
+<!-- user表单弹窗 -->
+<form id="user-form" lay-filter="user-form" class="layui-form model-form">
+    <input name="userId" type="hidden"/>
+    <div class="layui-form-item">
+        <label class="layui-form-label">User Name</label>
+        <div class="layui-input-block">
+            <input name="userName" placeholder="user name" type="text" class="layui-input" maxlength="20"
+                   lay-verify="required" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Nick Name</label>
+        <div class="layui-input-block">
+            <input name="nickName" placeholder="nick name" type="text" class="layui-input" maxlength="20" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Phone Number</label>
+        <div class="layui-input-block">
+            <input name="phone" placeholder="phone number" type="text" class="layui-input" autocomplete="off"/>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Sex</label>
+        <div class="layui-input-block">
+            <input type="radio" name="sex" value="male" title="male" checked/>
+            <input type="radio" name="sex" value="female" title="female"/>
+        </div>
+    </div>
+    <div class="layui-form-item model-form-footer">
+        <button class="layui-btn layui-btn-primary" type="button" ew-event="closeDialog">Cancel</button>
+        <button class="layui-btn" lay-filter="user-form-submit" lay-submit>Submit</button>
+    </div>
+</form>
+
+<script>
+    layui.use(['layer', 'admin', 'form'], function () {
+        var layer = layui.layer;
+        var admin = layui.admin;
+        var form = layui.form;
+
+        form.render('radio');
+
+        var url = '/system/user/add';
+        // 回显user数据
+        var user = admin.getTempData('t_user');
+        if (user) {
+            $('input[name="userName"]').attr('readonly', 'readonly');
+            url = '/system/user/edit';
+            form.val('user-form', user);
+        }
+
+        // 表单提交事件
+        form.on('submit(user-form-submit)', function (data) {
+            layer.load(2);
+            $.post(url, data.field, function (data) {
+                layer.closeAll('loading');
+                if (data.code == 200) {
+                    layer.msg(data.msg, {icon: 1});
+                    admin.finishPopupCenter();
+                } else {
+                    layer.msg(data.code + ":" + data.msg, {icon: 2});
+                }
+            });
+            return false;
+        });
+    });
+</script>

@@ -1,0 +1,142 @@
+<div class="layui-card">
+    <div class="layui-card-header">
+        <h2 class="header-title">System Log</h2>
+        <span class="layui-breadcrumb pull-right">
+          <a href="#!home_console">Homepage</a>
+          <a><cite>System Log</cite></a>
+        </span>
+    </div>
+    <div class="layui-card-body">
+        <div class="layui-form toolbar">
+            Search：
+            <input id="log-search-client-ip" class="layui-input search-input" type="text" placeholder="client ip" autocomplete="off"/>
+            <input id="log-search-request-url" class="layui-input search-input" type="text" placeholder="request url" autocomplete="off"/>
+            <input id="log-search-user" class="layui-input search-input" type="text" placeholder="operate user" autocomplete="off"/>&nbsp;&nbsp;
+            Begin:
+            <input type="text" readonly="readonly"  class="layui-input search-input" id="log-search-begintime" placeholder="yyyy-MM-dd" autocomplete="off">
+            End:
+            <input type="text" readonly="readonly"  class="layui-input search-input" id="log-search-endtime" placeholder="yyyy-MM-dd" autocomplete="off">
+            <button type="button" id="log-btn-search" class="layui-btn icon-btn"><i class="layui-icon">&#xe615;</i>Search</button>
+            <button id="log-btn-show" class="layui-btn icon-btn"><i class="layui-icon"></i>All</button>
+        </div>
+        <table id="log-table" lay-filter="log-table"></table>
+    </div>
+</div>
+
+<script type="text/html" id="log-operation-bar">
+    <a class="layui-btn layui-btn-xs" lay-event="reqDetail">Param Detail</a>
+    <a class="layui-btn layui-btn-xs" lay-event="respDetail">Response Detail</a>
+</script>
+
+<script>
+    layui.use(['table','laydate','util'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var util =layui.util;
+
+        laydate.render({
+            elem: '#log-search-begintime'
+            , lang: 'en'
+        });
+
+        laydate.render({
+            elem: '#log-search-endtime'
+            , lang: 'en'
+        });
+
+        //第一个实例
+        table.render({
+            elem: '#log-table',
+            url: '/system/log/list',
+            page: true,//开启分页
+            cols: [
+                [ //表头
+                    {type: 'numbers', width: 60, title: 'id'},
+                    {
+                        field: 'clientIp',
+                        title: 'Client Ip'
+                    },
+                    {
+                        field: 'requestUrl',
+                        title: 'Request Url'
+                    },
+                    {
+                        field: 'operateUser',
+                        title: 'Operate User'
+                    },
+                    {
+                        field: 'operatingTime',
+                        title: 'Operating Time'
+                    },
+                    {
+                        templet: function (d) {return util.toDateString(d.createTime);},
+                        title: 'Operating Time'
+                    },
+                    {
+                        align: 'center',
+                        toolbar: '#log-operation-bar',
+                        title: 'Operation',
+                        fixed: 'right'
+                    }
+                ]
+            ]
+        });
+
+        // 搜索按钮点击事件
+        $('#log-btn-search').click(function () {
+            var clientIp = $('#log-search-client-ip').val();
+            var requestUrl = $('#log-search-request-url').val();
+            var operateUser = $('#log-search-user').val();
+            var begin = $('#log-search-begintime').val();
+            var end = $('#log-search-endtime').val();
+            table.reload('log-table', {
+                where: {
+                    clientIp:clientIp,
+                    requestUrl:requestUrl,
+                    operateUser: operateUser,
+                    begin: begin,
+                    end: end
+                }, page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+            });
+        });
+
+        // 展示全部按钮点击事件
+        $('#log-btn-show').click(function () {
+            $('#log-search-client-ip').val('');
+            $('#log-search-request-url').val('');
+            $('#log-search-user').val('');
+            $('#log-search-begintime').val('');
+            $('#log-search-endtime').val('');
+            table.reload('log-table', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+                , where: {
+                    clientIp:'',
+                    requestUrl:'',
+                    operateUser: '',
+                    begin: '',
+                    end: ''
+                }
+            });
+        });
+
+        // 工具条点击事件
+        table.on('tool(log-table)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if (layEvent === 'reqDetail') {
+                layer.alert(data.reqDetail, {
+                    title: 'Request Param Detail：'
+                });
+            } else if (layEvent === 'respDetail') {
+                layer.alert(data.respDetail, {
+                    title: 'Response Detail：'
+                });
+            }
+        });
+    });
+</script>

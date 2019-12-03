@@ -1,0 +1,35 @@
+<div class="layui-logo">
+    User Permissions Management
+    <input type="hidden" id="username" value='${login_user.userName}'/>
+</div>
+<ul class="layui-nav layui-layout-left">
+    <li class="layui-nav-item" lay-unselect>
+        <a ew-event="flexible" title="Side Expansion"><i class="layui-icon layui-icon-shrink-right"></i></a>
+    </li>
+    <li class="layui-nav-item" lay-unselect>
+        <a ew-event="refresh" title="Refresh"><i class="layui-icon layui-icon-refresh-3"></i></a>
+    </li>
+</ul>
+<ul class="layui-nav layui-layout-right">
+    <li class="layui-nav-item layui-hide-xs" lay-unselect>
+        <a ew-event="fullScreen" title="Full Screen"><i class="layui-icon layui-icon-screen-full"></i></a>
+    </li>
+    <li class="layui-nav-item" lay-unselect>
+        <a>
+            <img src="assets/images/head.png" class="layui-nav-img">
+            <cite>${login_user.userName}</cite>
+        </a>
+        <dl class="layui-nav-child">
+            <dd lay-unselect>
+                <a id="setPsw">Modify Password</a>
+            </dd>
+            <hr>
+            <dd lay-unselect>
+                <a id="btnLogout">Exit</a>
+            </dd>
+        </dl>
+    </li>
+    <li class="layui-nav-item" lay-unselect>
+        <i class="layui-icon layui-icon-more-vertical"></i>
+    </li>
+</ul>
